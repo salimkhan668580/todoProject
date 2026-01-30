@@ -12,6 +12,8 @@ import {
     View,
 } from "react-native";
 import ScreenLayout from "../../Layout/ScreenLayout";
+import { useAppDispatch } from "@/app/store/hook";
+import { ClearUser } from "@/app/store/AuthSlice";
 
 type SettingItemProps = {
   icon: string;
@@ -22,6 +24,11 @@ type SettingItemProps = {
 };
 
 function ProfileScreen() {
+  const dispatch = useAppDispatch();
+  const handleLogout = () => {
+    dispatch(ClearUser());
+  }
+
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   return (
     <ScreenLayout>
@@ -107,18 +114,23 @@ function ProfileScreen() {
         </View>
 
         {/* --- 4. THEMED LOGOUT --- */}
-        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8}
+        onPress={()=>handleLogout()}
+        >
           <LinearGradient
             colors={["#A2F3FF", "#CBBAFF"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.gradientBtn}
+
+        
           >
             <MaterialCommunityIcons
               name="logout"
               size={22}
               color="#2D3142"
               style={{ marginRight: 10 }}
+
             />
             <Text style={styles.logoutText}>Logout Session</Text>
           </LinearGradient>

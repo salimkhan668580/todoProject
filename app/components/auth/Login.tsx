@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { RootStackParamList } from "../../navigation/AppNevigation";
+import { useAppDispatch } from "@/app/store/hook";
+import { addUser } from "@/app/store/AuthSlice";
 
 const PRIMARY = "#0a7ea4";
 const GRAY_300 = "#D1D5DB";
@@ -21,6 +23,10 @@ const RED_500 = "#EF4444";
 const GRAY_600 = "#4B5563";
 
 export default function LoginPage() {
+const dispatch = useAppDispatch();
+
+
+
   const [email, setEmail] = useState("salim@gmail.com");
   const [password, setPassword] = useState("1234");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
@@ -53,6 +59,8 @@ export default function LoginPage() {
         index: 0,
         routes: [{ name: "MainTabs" }],
       });
+    
+      dispatch(addUser(email));
 
     // UI only – no API call. A
     // dd navigation or API here when needed.
