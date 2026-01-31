@@ -2,12 +2,12 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 
 
 interface CounterState {
-  value: string;
+  value: null
 
 }
 
 const initialState: CounterState = {
-  value: ""
+  value: null,
 
 };
 
@@ -22,7 +22,7 @@ export const AuthSlice = createSlice({
       state.value=action.payload
     },
     ClearUser:(state)=>{
-    state.value=""
+    state.value=null
     }
    
  

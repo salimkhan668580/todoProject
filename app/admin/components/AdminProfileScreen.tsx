@@ -81,7 +81,7 @@ function AdminProfileScreen() {
 
             onPress={()=>{
               item.id === '2' ? handelLogout() : handleOptionPress(item.id)}} >
-              <View style={[styles.iconBg, { backgroundColor: it  em.color + '15' }]}>
+              <View style={[styles.iconBg, { backgroundColor: item.color + '15' }]}>
                 <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
               </View>
               <Text style={styles.menuLabel}>{item.label}</Text>

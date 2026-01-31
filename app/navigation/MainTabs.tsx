@@ -2,6 +2,8 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Entypo} from "@expo/vector-icons";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import HomeScreen from "../components/Home/HomeScreen";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 
 import ProfileScreen from "../components/profile/ProfileScreen";
 import TodoScreen from "../components/todo/TodoScreen";
@@ -16,9 +18,10 @@ export type TabParamList = {
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export default function TabNavigator() {
+   const insets = useSafeAreaInsets();
   return (
-    <Tab.Navigator
-      id="MainTabs"
+ <Tab.Navigator
+      id="Home"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: "#7C3AED",
@@ -27,9 +30,10 @@ export default function TabNavigator() {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E5E7EB",
+
           paddingTop: 5,
-          paddingBottom: 5,
-          height: 60,
+          paddingBottom: insets.bottom + 5, // 👈 KEY FIX
+          height: 60 + insets.bottom,       // 👈 KEY FIX
         },
       }}
     >

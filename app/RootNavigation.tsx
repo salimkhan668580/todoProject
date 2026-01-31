@@ -1,5 +1,4 @@
 // navigation/RootNavigator.tsx
-import { NavigationContainer } from "@react-navigation/native";
 import AdminNavigation from "./admin/navigation/AdminNevigation";
 import AuthNavigator from "./AuthNavigation";
 import { useAppSelector, } from "./store/hook";
@@ -11,9 +10,10 @@ const user = useAppSelector(state => state.user.value);
 
   if (!user) return <AuthNavigator />;
 
-  if (user === "admin@gmail.com") {
+  if (user && user?.data.role === "parent") {
     return <AdminNavigation />;
   }
+  
     return <AppNavigation />;
 
 //   return <AdminNavigation/>;

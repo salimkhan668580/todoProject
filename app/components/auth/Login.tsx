@@ -1,21 +1,27 @@
+import { addUser } from "@/app/store/AuthSlice";
+import { useAppDispatch } from "@/app/store/hook";
 import Entypo from "@expo/vector-icons/Entypo";
-import { useNavigation, type NavigationProp } from "@react-navigation/native";
+
+import Toast from 'react-native-toast-message';
+
 import React, { useState } from "react";
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { RootStackParamList } from "../../navigation/AppNevigation";
-import { useAppDispatch } from "@/app/store/hook";
-import { addUser } from "@/app/store/AuthSlice";
+
+import { authPayload } from "@/app/types/auth";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "@/app/service/authService";
+import { AxiosError } from "axios";
 
 const PRIMARY = "#0a7ea4";
 const GRAY_300 = "#D1D5DB";
@@ -23,14 +29,15 @@ const RED_500 = "#EF4444";
 const GRAY_600 = "#4B5563";
 
 export default function LoginPage() {
-const dispatch = useAppDispatch();
-
-
-
+  const dispatch = useAppDispatch();
+  
   const [email, setEmail] = useState("salim@gmail.com");
   const [password, setPassword] = useState("1234");
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
-    {},
+  const [errors, setErrors] = useState<authPayload>(
+    {
+      email: "",
+      password: "",
+    },
   );
   const [showPassword, setShowPassword] = useState(false);
 
@@ -40,7 +47,6 @@ const dispatch = useAppDispatch();
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const validate = (): boolean => {
     const next: { email?: string; password?: string } = {};
     if (!email.trim()) next.email = "Email is required";
@@ -53,19 +59,46 @@ const dispatch = useAppDispatch();
     return Object.keys(next).length === 0;
   };
 
+  const loginMutation=useMutation({
+    mutationFn:(payload:authPayload)=>authService.login(payload.email,payload.password),
+    onSuccess:(data)=>{
+        dispatch(addUser(data));
+       Toast.show({
+      type: 'success',
+      text1: 'Login Successfully',
+     
+    });
+    },
+    onError:(error:unknown)=>{
+      if(error instanceof AxiosError){
+   
+
+       return Toast.show({
+      type: 'error',
+      text1: error?.response?.data.message,
+     
+    });
+  }
+
+  Toast.show({
+      type: 'error',
+      text1: "Something went wrong",
+     
+    });
+
+
+
+
+
+    }
+  })
+
   const handleLogin = () => {
     if (!validate()) return;
-    navigation.reset({
-        index: 0,
-        routes: [{ name: "MainTabs" }],
-      });
-    
-      dispatch(addUser(email));
+  
+    loginMutation.mutate({email,password})
 
-    // UI only – no API call. A
-    // dd navigation or API here when needed.
   };
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
