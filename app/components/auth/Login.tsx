@@ -32,8 +32,8 @@ const GRAY_600 = "#4B5563";
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   
-  const [email, setEmail] = useState("Lubna@gmail.com");
-  const [password, setPassword] = useState("1234");
+  const [email, setEmail] = useState("mkkhan@gmail.com");
+  const [password, setPassword] = useState("Mkkhan@1234");
   const [errors, setErrors] = useState<authPayload>(
     {
       email: "",

@@ -1,9 +1,13 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminScreenLayout from "../AdminLayout/AdminScreenLayout";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from '../navigation/AdminNevigation';
+import { childrenService } from '@/app/service/childrenService';
+import { ChildItem } from '@/app/types/children';
+
 
 
 
@@ -14,49 +18,81 @@ const CHILDREN_DATA = [
 ];
 
 function AdminHome() {
-    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
-    const handleChildPress = () => {
-      navigation.navigate('TaskDetails');
-    }
+  const { data, isFetching } = useQuery({
+    queryKey: ['children'],
+    queryFn: () => childrenService.getChildren(),
+  });
+
+  const children: ChildItem[] = data?.data || [];
+
+  const handleChildPress = () => {
+    navigation.navigate('TaskDetails');
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ['children'] });
+    setRefreshing(false);
+  };
+
   return (
     <AdminScreenLayout>
       <ScrollView 
         style={styles.main} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing || isFetching} onRefresh={onRefresh} />
+        }
       >
         <Text style={styles.sectionTitle}>Children Overview</Text>
-        
-        {CHILDREN_DATA.map((child) => (
-          <TouchableOpacity key={child.id} style={styles.childCard} activeOpacity={0.9} onPress={()=>handleChildPress()} >
+
+        {children.map((child) => (
+          <TouchableOpacity
+            key={child._id}
+            style={styles.childCard}
+            activeOpacity={0.9}
+            onPress={handleChildPress}
+          >
             {/* Image Section */}
             <Image source={{ uri: child.image }} style={styles.avatar} />
-            
+
             {/* Info Section */}
             <View style={styles.infoContainer}>
               <Text style={styles.childName}>{child.name}</Text>
-              
+
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Total Tasks</Text>
-                  <Text style={styles.totalValue}>{child.totalTasks}</Text>
+                  <Text style={styles.totalValue}>{child.totalTodos}</Text>
                 </View>
-                
+
                 <View style={styles.divider} />
 
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Completed</Text>
-                  <Text style={styles.completeValue}>{child.completedTasks}</Text>
+                  <Text style={styles.completeValue}>{child.doneTodos}</Text>
                 </View>
               </View>
 
-              {/* Theme-matching Progress Bar */}
+              {/* Progress bar based on doneTodos / totalTodos */}
               <View style={styles.progressContainer}>
-                <View style={[
-                  styles.progressBar, 
-                  { width: `${(child.completedTasks / child.totalTasks) * 100}%` }
-                ]} />
+                <View
+                  style={[
+                    styles.progressBar,
+                    {
+                      width: `${
+                        child.totalTodos
+                          ? (child.doneTodos / child.totalTodos) * 100
+                          : 0
+                      }%`,
+                    },
+                  ]}
+                />
               </View>
             </View>
 
@@ -67,6 +103,7 @@ function AdminHome() {
     </AdminScreenLayout>
   );
 }
+
 
 const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#F9FFFF' },
