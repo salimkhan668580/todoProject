@@ -1,11 +1,9 @@
 import { FontAwesome6 } from "@expo/vector-icons";
-import { useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../navigation/AppNevigation";
-
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
-
+import { useAppSelector } from "@/app/store/hook";
 
 const TEXT_PRIMARY = "#111827";
 const TEXT_SECONDARY = "#6B7280";
@@ -14,22 +12,27 @@ const BG = "#F8FAFC";
 export default function Header() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const userState = useAppSelector(state => state.user.value);
+  const user = userState?.data?.userDetails ?? userState?.data ?? userState;
 
+  const avatarUri =
+    user?.image ||
+    "https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png";
+  const displayName = user?.name || "";
+  const subtitle = user?.email || "";
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Left */}
       <View style={styles.left}>
         <Image
-          source={{
-            uri: "https://i.pravatar.cc/100?img=12",
-          }}
+          source={{ uri: avatarUri }}
           style={styles.avatar}
         />
 
         <View>
-          <Text style={styles.name}>Diavanda Domenic</Text>
-          <Text style={styles.workspace}>Mariposa’s Workspace</Text>
+          <Text style={styles.name}>{displayName}</Text>
+          {!!subtitle && <Text style={styles.workspace}>{subtitle}</Text>}
         </View>
       </View>
 

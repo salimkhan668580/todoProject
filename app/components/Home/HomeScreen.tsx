@@ -1,40 +1,31 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import ScreenLayout from '@/app/Layout/ScreenLayout';
+import ProgreeCard from "./ProgressCard";
+import DailyTask from "./DailyTask";
 
 function HomeScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ['todos'] });
+    setRefreshing(false);
+  };
+
   return (
     <ScreenLayout>
       <ScrollView 
         style={styles.main} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        {/* --- 1. TASK PROGRESS CARD --- */}
-        <LinearGradient
-          colors={['#A2F3FF', '#CBBAFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.progressCard}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Most important task progress</Text>
-            <View style={styles.closeBtn}><Text style={styles.closeBtnText}>×</Text></View>
-          </View>
-          <Text style={styles.taskCount}>2/5</Text>
-          <View style={styles.progressBarWrapper}>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: '40%' }]} />
-            </View>
-            <Text style={styles.progressPercent}>40%</Text>
-          </View>
-          {/* FIXED: Changed <div> to <View> */}
-          <View style={styles.tagRow}>
-            <View style={styles.tag}><Text style={styles.tagText} numberOfLines={1}>Illustrate design ideas...</Text></View>
-            <View style={styles.tag}><Text style={styles.tagText} numberOfLines={1}>Design graphic user...</Text></View>
-          </View>
-        </LinearGradient>
+        <ProgreeCard/>
 
         {/* --- 2. TABS --- */}
         <View style={styles.tabContainer}>
@@ -68,31 +59,10 @@ function HomeScreen() {
           </View>
         </View>
 
-        {/* --- 4. DAILY GOAL CARD --- */}
-        <View style={styles.goalCard}>
-          <View style={styles.goalInfo}>
-            <Text style={styles.goalTitle}>Daily Goal</Text>
-            <View style={styles.badgeRow}>
-              <View style={styles.tealBadge}>
-                <Text style={styles.badgeText}>2/5</Text>
-              </View>
-              <Text style={styles.tasksLabel}>Tasks</Text>
-            </View>
-            <Text style={styles.goalDescription}>You marked 2/5 tasks{"\n"}are done</Text>
-          </View>
+    <DailyTask/>
+     
 
-          <View style={styles.circularProgressContainer}>
-            <View style={styles.outerCircle}>
-               <View style={styles.progressArc} />
-               <View style={styles.innerCircle}>
-                  <View style={styles.iconBox}>
-                    {/* Placeholder for Icon */}
-                    <View style={styles.iconPlaceholder} />
-                  </View>
-               </View>
-            </View>
-          </View>
-        </View>
+        
       </ScrollView>
     </ScreenLayout>
   );
@@ -102,20 +72,7 @@ const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#F9FFFF' },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 10 },
   
-  // Progress Card
-  progressCard: { borderRadius: 24, padding: 20, marginBottom: 25 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  cardTitle: { color: '#2D3142', fontSize: 18, fontWeight: '700', width: '85%' },
-  closeBtn: { backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
-  closeBtnText: { color: '#666', fontSize: 12 },
-  taskCount: { color: '#2D3142', fontSize: 16, fontWeight: '600', marginVertical: 10 },
-  progressBarWrapper: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  progressBarBackground: { flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: 3, marginRight: 10 },
-  progressBarFill: { height: '100%', backgroundColor: '#E91E63', borderRadius: 3 },
-  progressPercent: { fontWeight: 'bold', color: '#2D3142' },
-  tagRow: { flexDirection: 'row', gap: 10 },
-  tag: { flex: 1, backgroundColor: 'rgba(255,255,255,0.8)', padding: 8, borderRadius: 8 },
-  tagText: { fontSize: 10, color: '#777' },
+
 
   // Tabs
   tabContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 25 },
@@ -138,23 +95,6 @@ const styles = StyleSheet.create({
   taskTotal: { color: '#00BFA5', fontWeight: 'bold' },
   projectTotal: { color: '#D1C4E9', fontWeight: 'bold' },
 
-  // Daily Goal Card
-  goalCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  goalInfo: { flex: 1 },
-  goalTitle: { fontSize: 20, color: '#7D7D7D', fontWeight: '500', marginBottom: 15 },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  tealBadge: { backgroundColor: '#00BFA5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginRight: 8 },
-  badgeText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
-  tasksLabel: { fontSize: 18, fontWeight: 'bold', color: '#2D3142' },
-  goalDescription: { color: '#9E9E9E', fontSize: 14, lineHeight: 20 },
-  
-  // Progress Circle
-  circularProgressContainer: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center' },
-  outerCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
-  progressArc: { position: 'absolute', width: 90, height: 90, borderRadius: 45, borderWidth: 8, borderColor: '#A2F3FF', borderTopColor: 'transparent', borderRightColor: 'transparent', transform: [{ rotate: '-45deg' }] },
-  innerCircle: { width: 68, height: 68, borderRadius: 34, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center' },
-  iconBox: { backgroundColor: '#00BFA5', padding: 12, borderRadius: 12 },
-  iconPlaceholder: { width: 24, height: 24, borderWidth: 2, borderColor: 'white', borderRadius: 4 }
 });
 
 export default HomeScreen;
