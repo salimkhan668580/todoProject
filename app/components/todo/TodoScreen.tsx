@@ -11,15 +11,16 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import { AxiosError } from 'axios';
 import ScreenLayout from "../../Layout/ScreenLayout";
+import { todoService } from "@/app/service/todoService";
+import { TodoItem } from "@/app/types/todo";
 
 function TodoScreen() {
   const [task, setTask] = useState('');
-  const [todoList, setTodoList] = useState([
-    { id: '1', text: 'Illustrate design ideas', completed: true },
-    { id: '2', text: 'Design graphic user interface', completed: false },
-    { id: '3', text: 'Prepare moodboard for client', completed: false },
-  ]);
+  const [todoList, setTodoList] = useState<TodoItem[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Date & Time Logic
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -29,25 +30,111 @@ function TodoScreen() {
     return () => clearInterval(timer);
   }, []);
 
+  const fetchTodos = async () => {
+    try {
+      const response = await todoService.getTodosByDay("today");
+      setTodoList(response.data);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        Toast.show({
+          type: 'error',
+          text1: error.response?.data?.message || 'Failed to load todos',
+        });
+        return;
+      }
+
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong while fetching todos',
+      });
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchTodos();
+    setRefreshing(false);
+  };
+
   const formattedDate = currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const formattedTime = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   // Task Actions
-  const addTask = () => {
-    if (task.trim().length > 0) {
-      setTodoList([{ id: Date.now().toString(), text: task, completed: false }, ...todoList]);
-      setTask('');
+  const addTask = async () => {
+    const trimmed = task.trim();
+    if (!trimmed.length) return;
+
+    try {
+      const response = await todoService.create(trimmed);
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: response.message || 'Task created successfully',
+        });
+        setTask('');
+        // Refresh today's list after successful creation
+        const todosResponse = await todoService.getTodosByDay("today");
+        setTodoList(todosResponse.data);
+      }
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        Toast.show({
+          type: 'error',
+          text1: error.response?.data?.message || 'Failed to create task',
+        });
+        return;
+      }
+
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong while creating task',
+      });
     }
   };
 
-  const toggleTask = (id:any) => {
-    setTodoList(todoList.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
+  const toggleTask = async (id: string) => {
+    const item = todoList.find(t => t._id === id);
+    // If already done or not found, do nothing
+    if (!item || item.isDone) return;
+
+    try {
+      const response = await todoService.markTodoDone(id);
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: response.message || 'Task marked as done',
+        });
+        // Update local state optimistically to set isDone = true
+        setTodoList(prev =>
+          prev.map(t => (t._id === id ? { ...t, isDone: true } : t)),
+        );
+      }
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        Toast.show({
+          type: 'error',
+          text1: error.response?.data?.message || 'Failed to update task',
+        });
+        return;
+      }
+
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong while updating task',
+      });
+    }
   };
 
-  const deleteTask = (id:any) => {
-    setTodoList(todoList.filter(item => item.id !== id));
+  const deleteTask = (id: string) => {
+    setTodoList(todoList.filter(item => item._id !== id));
   };
 
+  
   return (
     <ScreenLayout>
       <KeyboardAvoidingView 
@@ -75,23 +162,26 @@ function TodoScreen() {
         {/* --- TASKS LIST --- */}
         <FlatList
           data={todoList}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
           renderItem={({ item }) => (
             <View style={styles.todoCard}>
               <TouchableOpacity 
-                style={[styles.checkbox, item.completed && styles.checkedBox]} 
-                onPress={() => toggleTask(item.id)}
+                style={[styles.checkbox, item.isDone && styles.checkedBox]} 
+                disabled={item.isDone}
+                onPress={() => toggleTask(item._id)}
               >
-                {item.completed && <MaterialCommunityIcons name="check" size={14} color="white" />}
+                {item.isDone && <MaterialCommunityIcons name="check" size={14} color="white" />}
               </TouchableOpacity>
               
-              <Text style={[styles.todoText, item.completed && styles.completedText]}>
-                {item.text}
+              <Text style={[styles.todoText, item.isDone && styles.completedText]}>
+                {item.title}
               </Text>
 
-              <TouchableOpacity onPress={() => deleteTask(item.id)}>
+              <TouchableOpacity onPress={() => deleteTask(item._id)}>
                 <MaterialCommunityIcons name="trash-can-outline" size={22} color="#FF8A80" />
               </TouchableOpacity>
             </View>

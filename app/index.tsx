@@ -4,11 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import RootNavigator from "./RootNavigation";
 
 
-
-
-
-
-
 export default function App() {
 
   return (

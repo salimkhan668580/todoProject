@@ -1,79 +1,75 @@
 import React from 'react';
 import { StyleSheet, Text, View, SectionList } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ScreenLayout from "@/app/Layout/ScreenLayout";
+import { todoService } from "@/app/service/todoService";
+import { TodoItem } from "@/app/types/todo";
 
-// Updated Mock Data with some incomplete tasks
-const HISTORY_DATA = [
-  {
-    title: 'Yesterday',
-    data: [
-      { id: '1', text: 'Finalize landing page design', completed: true, time: '04:20 PM' },
-      { id: '2', text: 'Team sync meeting', completed: false, time: 'Missed' }, // Incomplete
-    ],
-  },
-  {
-    title: 'Jan 27, 2026',
-    data: [
-      { id: '3', text: 'Fix navigation bugs', completed: true, time: '02:15 PM' },
-      { id: '4', text: 'Update profile UI', completed: true, time: '11:30 AM' },
-      { id: '5', text: 'Research color palettes', completed: false, time: 'Expired' }, // Incomplete
-    ],
-  },
-  {
-    title: 'Jan 28, 2026',
-    data: [
-      { id: '3', text: 'Fix navigation bugs', completed: true, time: '02:15 PM' },
-      { id: '4', text: 'Update profile UI', completed: true, time: '11:30 AM' },
-      { id: '5', text: 'Research color palettes', completed: false, time: 'Expired' }, // Incomplete
-    ],
-  },
-  {
-    title: 'Jan 29, 2026',
-    data: [
-      { id: '3', text: 'Fix navigation bugs', completed: true, time: '02:15 PM' },
-      { id: '4', text: 'Update profile UI', completed: true, time: '11:30 AM' },
-      { id: '5', text: 'Research color palettes', completed: false, time: 'Expired' }, // Incomplete
-    ],
-  },
-  {
-    title: 'Jan 30, 2026',
-    data: [
-      { id: '3', text: 'Fix navigation bugs', completed: true, time: '02:15 PM' },
-      { id: '4', text: 'Update profile UI', completed: true, time: '11:30 AM' },
-      { id: '5', text: 'Research color palettes', completed: false, time: 'Expired' }, // Incomplete
-    ],
-  },
-  {
-    title: 'Jan 31, 2026',
-    data: [
-      { id: '3', text: 'Fix navigation bugs', completed: true, time: '02:15 PM' },
-      { id: '4', text: 'Update profile UI', completed: true, time: '11:30 AM' },
-      { id: '5', text: 'Research color palettes', completed: false, time: 'Expired' }, // Incomplete
-    ],
-  },
-];
+// Helper to group todos by created date (YYYY-MM-DD)
+const groupTodosByDate = (todos: TodoItem[]) => {
+  const sections: { title: string; data: TodoItem[] }[] = [];
+  const map = new Map<string, TodoItem[]>();
+
+  todos.forEach((todo) => {
+    const dateKey = todo.createdAt.slice(0, 10); // 2026-01-31
+    if (!map.has(dateKey)) {
+      map.set(dateKey, []);
+    }
+    map.get(dateKey)!.push(todo);
+  });
+
+  const sortedKeys = Array.from(map.keys()).sort((a, b) => (a < b ? 1 : -1));
+
+  sortedKeys.forEach((key) => {
+    const date = new Date(key);
+    const title = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    sections.push({
+      title,
+      data: map.get(key)!,
+    });
+  });
+
+  return sections;
+};
 
 function PreviousTodoList() {
+  const queryClient = useQueryClient();
+  const { data, isFetching } = useQuery({
+    queryKey: ['todos', 'all'],
+    queryFn: () => todoService.getAllTodos(),
+  });
+
+  const todos: TodoItem[] = (data?.data || []).filter(t => !t.isDeleted);
+  const sections = groupTodosByDate(todos);
   const renderItem = ({ item }:any) => {
-    // Dynamic styles based on status
-    const accentColor = item.completed ? '#00BFA5' : '#FF8A80';
-    const statusIcon = item.completed ? 'check' : 'close';
-    const statusLabel = item.completed ? `Completed at ${item.time}` : `Incomplete (${item.time})`;
+    // Map API fields to UI fields
+    const completed = item.isDone;
+    const accentColor = completed ? '#00BFA5' : '#FF8A80';
+    const statusIcon = completed ? 'check' : 'close';
+    const timeLabel = item.doneTime
+      ? new Date(item.doneTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      : '—';
+    const statusLabel = completed ? `Completed at ${timeLabel}` : `Incomplete (${timeLabel})`;
 
     return (
       <View style={styles.historyCard}>
         {/* Left accent line changes color */}
-        <View style={[styles.statusLine, { backgroundColor: item.completed ? '#CBBAFF' : '#FF8A80' }]} />
+        <View style={[styles.statusLine, { backgroundColor: completed ? '#CBBAFF' : '#FF8A80' }]} />
         
         <View style={styles.cardContent}>
           <View style={styles.taskInfo}>
-            <Text style={[styles.taskText, !item.completed && styles.incompleteText]}>
-              {item.text}
+            <Text style={[styles.taskText, !completed && styles.incompleteText]}>
+              {item.title}
             </Text>
             <View style={styles.timeRow}>
               <MaterialCommunityIcons 
-                name={item.completed ? "clock-check-outline" : "clock-alert-outline"} 
+                name={completed ? "clock-check-outline" : "clock-alert-outline"} 
                 size={12} 
                 color={accentColor} 
               />
@@ -107,13 +103,17 @@ function PreviousTodoList() {
         </View>
 
         <SectionList
-          sections={HISTORY_DATA}
-          keyExtractor={(item) => item.id}
+          sections={sections}
+          keyExtractor={(item) => item._id}
           renderItem={renderItem}
           renderSectionHeader={renderSectionHeader}
           stickySectionHeadersEnabled={false}
           contentContainerStyle={styles.listPadding}
           showsVerticalScrollIndicator={false}
+          refreshing={isFetching}
+          onRefresh={() =>
+            queryClient.invalidateQueries({ queryKey: ['todos', 'all'] })
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="clipboard-off-outline" size={80} color="#E0F7FA" />

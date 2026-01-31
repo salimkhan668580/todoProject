@@ -14,6 +14,9 @@ import {
 import ScreenLayout from "../../Layout/ScreenLayout";
 import { useAppDispatch } from "@/app/store/hook";
 import { ClearUser } from "@/app/store/AuthSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "@tanstack/react-query";
+import { profileService } from "@/app/service/profileService";
 
 type SettingItemProps = {
   icon: string;
@@ -25,9 +28,18 @@ type SettingItemProps = {
 
 function ProfileScreen() {
   const dispatch = useAppDispatch();
-  const handleLogout = () => {
+  const handleLogout = async () => {
     dispatch(ClearUser());
-  }
+    await AsyncStorage.removeItem("token");
+  };
+
+  const { data: profileResponse } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => profileService.getProfile(),
+  });
+
+  const user = profileResponse?.data.userDetails;
+  const stats = profileResponse?.data.stats;
 
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   return (
@@ -41,7 +53,7 @@ function ProfileScreen() {
         <View style={styles.profileHeader}>
           <View style={styles.imageContainer}>
             <Image
-              source={{ uri: "https://i.pravatar.cc/150?u=diavanda" }}
+              source={{ uri: user?.image || "https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png" }}
               style={styles.profileImage}
             />
             <LinearGradient
@@ -51,8 +63,8 @@ function ProfileScreen() {
               <MaterialCommunityIcons name="pencil" size={14} color="#2D3142" />
             </LinearGradient>
           </View>
-          <Text style={styles.userName}>Diavanda Domenic</Text>
-          <Text style={styles.userEmail}>diavanda.d@design.com</Text>
+          <Text style={styles.userName}>{user?.name ?? ""}</Text>
+          <Text style={styles.userEmail}>{user?.email ?? ""}</Text>
         </View>
 
         {/* --- 2. THEMED STATS ROW --- */}
@@ -67,7 +79,7 @@ function ProfileScreen() {
                 color="#8B5CF6"
               />
             </View>
-            <Text style={styles.statNumber}>128</Text>
+            <Text style={styles.statNumber}>{stats?.doneCount ?? 0}</Text>
             <Text style={styles.statLabel}>Completed</Text>
           </View>
 
@@ -81,7 +93,7 @@ function ProfileScreen() {
                 color="#00BFA5"
               />
             </View>
-            <Text style={[styles.statNumber, { color: "#00BFA5" }]}>12</Text>
+            <Text style={[styles.statNumber, { color: "#00BFA5" }]}>{stats?.pendingCount ?? 0}</Text>
             <Text style={styles.statLabel}>Pending</Text>
           </View>
         </View>
@@ -101,14 +113,14 @@ function ProfileScreen() {
             icon="bell-ring-outline"
             label="Notifications"
             color="#14B8A6"
-            onPress={() => navigation.navigate("TodoList")}
+            onPress={() => navigation.navigate("Notification")}
             sublabel="Mute or change alerts"
           />
           <SettingItem
             icon="palette-swatch-outline"
             label="App Theme"
             color="#8B5CF6"
-            onPress={() => navigation.navigate("TodoList")}
+            onPress={() => navigation.navigate("Notification")}
             sublabel="Teal & Purple Sky"
           />
         </View>

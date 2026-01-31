@@ -3,6 +3,7 @@ import { useAppDispatch } from "@/app/store/hook";
 import Entypo from "@expo/vector-icons/Entypo";
 
 import Toast from 'react-native-toast-message';
+  import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import React, { useState } from "react";
 import {
@@ -31,7 +32,7 @@ const GRAY_600 = "#4B5563";
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   
-  const [email, setEmail] = useState("salim@gmail.com");
+  const [email, setEmail] = useState("Lubna@gmail.com");
   const [password, setPassword] = useState("1234");
   const [errors, setErrors] = useState<authPayload>(
     {
@@ -55,14 +56,20 @@ export default function LoginPage() {
     if (!password) next.password = "Password is required";
     else if (password.length < 4)
       next.password = "Password must be at least 4 characters";
-    setErrors(next);
+    setErrors(next as authPayload);
+    
     return Object.keys(next).length === 0;
   };
 
   const loginMutation=useMutation({
     mutationFn:(payload:authPayload)=>authService.login(payload.email,payload.password),
-    onSuccess:(data)=>{
+    onSuccess:async(data)=>{
+      
         dispatch(addUser(data));
+      const token = (data as any)?.token || (data as any)?.data?.token;
+      if (token) {
+        await AsyncStorage.setItem("token", token);
+      }
        Toast.show({
       type: 'success',
       text1: 'Login Successfully',

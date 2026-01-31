@@ -2,60 +2,46 @@ import React from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import ScreenLayout from './ScreenLayout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-
-// Mock Data for Notifications
-const NOTIFICATIONS = [
-  {
-    id: '1',
-    title: 'New Project Assigned',
-    message: 'You have been added to "Mobile App Redesign"',
-    time: '2m ago',
-    type: 'project',
-    unread: true,
-  },
-  {
-    id: '2',
-    title: 'Task Deadline',
-    message: 'Task "Design graphic user interface" is due in 1 hour',
-    time: '45m ago',
-    type: 'alert',
-    unread: true,
-  },
-  {
-    id: '3',
-    title: 'Daily Goal Achieved!',
-    message: 'Congratulations! You marked 5/5 tasks as done today.',
-    time: '3h ago',
-    type: 'goal',
-    unread: false,
-  },
-  {
-    id: '4',
-    title: 'Workspace Update',
-    message: 'Mariposa added 3 new documents to the "Docs" tab.',
-    time: 'Yesterday',
-    type: 'info',
-    unread: false,
-  },
-];
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { notificationService } from '@/app/service/notificationService';
+import { NotificationItem } from '@/app/types/notification';
 
 function NotificationScreen() {
-  const getIcon = (type:any) => {
-    switch (type) {
-      case 'project': return { name: 'briefcase-outline', color: '#CBBAFF' };
-      case 'alert': return { name: 'bell-alert-outline', color: '#FF8A80' };
-      case 'goal': return { name: 'trophy-outline', color: '#00BFA5' };
-      default: return { name: 'information-outline', color: '#A2F3FF' };
+  const queryClient = useQueryClient();
+  const { data, isFetching } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationService.getNotifications(),
+  });
+
+  const notifications: NotificationItem[] = data?.data || [];
+
+  const getIcon = (reminderType: string) => {
+    switch (reminderType) {
+      case 'morning':
+        return { name: 'weather-sunset-up', color: '#FFB74D' };
+      case 'evening':
+        return { name: 'weather-sunset-down', color: '#64B5F6' };
+      default:
+        return { name: 'bell-outline', color: '#CBBAFF' };
     }
   };
 
-  const renderItem = ({ item }:any) => {
-    const iconData = getIcon(item.type);
+  const formatTime = (iso: string) => {
+    const date = new Date(iso);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const renderItem = ({ item }: { item: NotificationItem }) => {
+    const iconData = getIcon(item.ReminderType);
+    const unread = !item.isRead;
 
     return (
       <TouchableOpacity 
-        style={[styles.notificationCard, item.unread && styles.unreadCard]}
+        style={[styles.notificationCard, unread && styles.unreadCard]}
         activeOpacity={0.7}
       >
         <View style={[styles.iconContainer, { backgroundColor: iconData.color + '20' }]}>
@@ -65,12 +51,12 @@ function NotificationScreen() {
         <View style={styles.textContainer}>
           <View style={styles.headerRow}>
             <Text style={styles.notifTitle}>{item.title}</Text>
-            <Text style={styles.timeText}>{item.time}</Text>
+            <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
           </View>
-          <Text style={styles.notifMessage} numberOfLines={2}>{item.message}</Text>
+          <Text style={styles.notifMessage} numberOfLines={2}>{item.description}</Text>
         </View>
 
-        {item.unread && <View style={styles.unreadDot} />}
+        {unread && <View style={styles.unreadDot} />}
       </TouchableOpacity>
     );
   };
@@ -80,17 +66,23 @@ function NotificationScreen() {
       <View style={styles.main}>
         <View style={styles.header}>
           <Text style={styles.title}>Notifications</Text>
-          <TouchableOpacity>
-            <Text style={styles.markRead}>Mark all as read</Text>
+          <TouchableOpacity
+            onPress={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
+          >
+            <Text style={styles.markRead}>Refresh</Text>
           </TouchableOpacity>
         </View>
 
         <FlatList
-          data={NOTIFICATIONS}
-          keyExtractor={(item) => item.id}
+          data={notifications}
+          keyExtractor={(item) => item._id}
           renderItem={renderItem}
           contentContainerStyle={styles.listPadding}
           showsVerticalScrollIndicator={false}
+          refreshing={isFetching}
+          onRefresh={() =>
+            queryClient.invalidateQueries({ queryKey: ['notifications'] })
+          }
         />
       </View>
     </ScreenLayout>
