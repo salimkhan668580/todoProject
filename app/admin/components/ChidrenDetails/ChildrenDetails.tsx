@@ -1,41 +1,54 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminScreenLayout from "../../AdminLayout/AdminScreenLayout";
 import { RootStackParamList } from '../../navigation/AdminNevigation';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
+import { childrenService } from '@/app/service/childrenService';
+import { ChildrenListResponse } from '@/app/types/children';
+import { ChildrenData } from '@/app/types/parentChildrenDetails';
+
+
 
 function ChildrenDetails() {
-
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const TASKS = [
-    { id: '1', title: 'Morning Exercise', status: 'Completed', time: '08:30 AM', color: '#00BFA5' },
-    { id: '2', title: 'Math Homework', status: 'In Progress', time: 'Pending', color: '#CBBAFF' },
-    { id: '3', title: 'Read Science Chapter 4', status: 'Completed', time: '11:00 AM', color: '#00BFA5' },
-    { id: '4', title: 'Clean Room', status: 'Not Started', time: 'Upcoming', color: '#BBB' },
-  ];
+  const route = useRoute<RouteProp<RootStackParamList, 'ChildrenDetails'>>();
+  const { userId } = route.params; // Get the ID passed from the previous screen
 
-  const filteredTasks = TASKS.filter(task => 
-    task.status === 'Completed' || task.status === 'Not Started'
-  );
+  const { data: response, isLoading, isError } = useQuery<ChildrenListResponse>({
+    queryKey: ['childDetails', userId],
+    queryFn: () => childrenService.getChildrenDetails(userId),
+    enabled: !!userId,
+  });
 
-  const handelSeePrevious=() => { navigation.navigate('PreviousTodoList') };
+  const childData:any  = response?.data||{};
+
+  if (isLoading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#CBBAFF" />;
+  if (isError || !childData) return <Text>Error loading data...</Text>;
+
+  // Calculate percentage
+  const progressPercent = childData.totalTodos > 0 
+    ? Math.round((childData.doneTodos / childData.totalTodos) * 100) 
+    : 0;
+
+  const handelSeePrevious = (userId:string) => { navigation.navigate('PreviousTodoList', { userId }) };
 
   return (
-    <AdminScreenLayout>
+<AdminScreenLayout>
       <ScrollView style={styles.main} showsVerticalScrollIndicator={false}>
         
         {/* --- 1. CHILD PROFILE HEADER --- */}
         <View style={styles.headerCard}>
           <Image 
-            source={{ uri: 'https://i.pravatar.cc/150?u=1' }} 
+            source={{ uri: childData.image }} 
             style={styles.childImage} 
           />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.childName}>Alex Johnson</Text>
+            <Text style={styles.childName}>{childData.name}</Text>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>Primary Student</Text>
+              <Text style={styles.badgeText}>{childData.role.toUpperCase()}</Text>
             </View>
           </View>
         </View>
@@ -43,55 +56,52 @@ function ChildrenDetails() {
         {/* --- 2. PROGRESS SUMMARY --- */}
         <View style={styles.summaryContainer}>
           <View style={styles.summaryBox}>
-            <Text style={styles.summaryValue}>2/4</Text>
+            <Text style={styles.summaryValue}>{childData.doneTodos}/{childData.totalTodos}</Text>
             <Text style={styles.summaryLabel}>Tasks Done</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryBox}>
-            <Text style={[styles.summaryValue, { color: '#CBBAFF' }]}>50%</Text>
+            <Text style={[styles.summaryValue, { color: '#CBBAFF' }]}>{progressPercent}%</Text>
             <Text style={styles.summaryLabel}>Overall Progress</Text>
           </View>
         </View>
 
-        {/* --- 3. FILTERED TASK LIST --- */}
+        {/* --- 3. TASK LIST FROM API --- */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Activity Overview</Text>
-          <View style={styles.filterChip}>
-             <Text style={styles.filterChipText}>Filtered</Text>
-          </View>
+          <Text style={styles.sectionTitle}>Current Tasks</Text>
         </View>
 
-        {filteredTasks.map((item) => (
-          <View key={item.id} style={styles.taskCard}>
-            <View style={[styles.statusIndicator, { backgroundColor: item.color }]} />
+        {
+          childData.todos.length > 0 ?
+        childData.todos.map((task: any) => (
+          <View key={task._id} style={styles.taskCard}>
+            <View style={[styles.statusIndicator, { backgroundColor: task.isDone ? '#00BFA5' : '#CBBAFF' }]} />
             <View style={styles.taskInfo}>
-              <Text style={styles.taskTitle}>{item.title}</Text>
-              <Text style={styles.taskTime}>{item.time}</Text>
+              <Text style={styles.taskTitle}>{task.title}</Text>
+              <Text style={styles.taskTime}>
+                {task.isDone ? `Done: ${new Date(task.updatedAt).toLocaleDateString()}` : 'Pending'}
+              </Text>
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: item.color + '15' }]}>
-              <Text style={[styles.statusBadgeText, { color: item.color }]}>
-                {item.status}
+            <View style={[styles.statusBadge, { backgroundColor: (task.isDone ? '#00BFA5' : '#CBBAFF') + '15' }]}>
+              <Text style={[styles.statusBadgeText, { color: task.isDone ? '#00BFA5' : '#CBBAFF' }]}>
+                {task.isDone ? 'Completed' : 'In Progress'}
               </Text>
             </View>
           </View>
-        ))}
+        ))
+        :
+        <Text style={styles.noTasksText}>No tasks found.</Text>
+        }
 
-        {/* --- NEW: SEE ALL PREVIOUS BUTTON --- */}
-        <TouchableOpacity style={styles.previousBtn} activeOpacity={0.7} onPress={handelSeePrevious}>
+        <TouchableOpacity style={styles.previousBtn} onPress={()=>handelSeePrevious(userId)}>
           <Text style={styles.previousBtnText}>See All Previous Tasks</Text>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#CBBAFF" />
         </TouchableOpacity>
 
-        {/* --- 4. ENCOURAGEMENT CARD --- */}
-        <LinearGradient
-          colors={['#A2F3FF', '#CBBAFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.quoteCard}
-        >
+        <LinearGradient colors={['#A2F3FF', '#CBBAFF']} style={styles.quoteCard}>
           <MaterialCommunityIcons name="star-face" size={24} color="#2D3142" />
           <Text style={styles.quoteText}>
-            Keep track of Alex progress here. Encouragement goes a long way!
+            Keep track of {childData.name}s progress here. Encouragement goes a long way!
           </Text>
         </LinearGradient>
 
@@ -170,6 +180,14 @@ const styles = StyleSheet.create({
     marginRight: 5
   },
 
+  noTasksText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D3142',
+    marginTop: 20,
+    marginBottom: 20,
+    textAlign: 'center'
+  },
   quoteCard: { 
     padding: 20, 
     borderRadius: 20, 

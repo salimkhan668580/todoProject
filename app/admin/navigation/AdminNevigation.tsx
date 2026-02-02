@@ -19,9 +19,11 @@ export type RootStackParamList = {
   TodoList: undefined;
   stats: undefined;
   taskReminder: undefined;
-  TaskDetails: undefined;
-  PreviousTodoList: undefined;
+  TaskDetails: undefined | { userId: string };
+  PreviousTodoList: undefined | {userId:string};
   Notification: undefined;
+  
+  ChildrenDetails: { userId: string }; 
 
   AdminTabs: { screen?: keyof AdminTabParamList } | undefined;
 };

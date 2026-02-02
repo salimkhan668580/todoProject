@@ -1,50 +1,82 @@
-import React from 'react';
-import { StyleSheet, Text, View, SectionList, Image, TouchableOpacity } from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleSheet, Text, View, SectionList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminScreenLayout from "../../AdminLayout/AdminScreenLayout";
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/AdminNevigation';
-
-const HISTORY_DATA = [
-  {
-    title: 'Yesterday',
-    data: [
-      { id: '1', text: 'Morning Exercise', completed: true, time: '08:30 AM' },
-      { id: '2', text: 'Math Homework', completed: false, time: 'Missed' },
-    ],
-  },
-  {
-    title: 'Jan 29, 2026',
-    data: [
-      { id: '3', text: 'Read Science Chapter 4', completed: true, time: '11:00 AM' },
-      { id: '4', text: 'Clean Room', completed: true, time: '06:00 PM' },
-    ],
-  },
-];
+import { useQuery } from '@tanstack/react-query';
+import { childrenService } from '@/app/service/childrenService';
+import { format, isYesterday, isToday } from 'date-fns';
 
 function PreviousTodoList() {
-      const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-      const handelSeeStats=() => { navigation.navigate('stats') };
-  const renderItem = ({ item }:any) => {
-    const accentColor = item.completed ? '#00BFA5' : '#FF8A80';
-    const statusIcon = item.completed ? 'check' : 'close';
-    const statusLabel = item.completed ? `Completed at ${item.time}` : `Incomplete (${item.time})`;
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'PreviousTodoList'>>();
+  
+  // Assuming userId is passed from ChildrenDetails
+  const { userId } = route.params || {};
+  console.log("this is user id=>",userId) 
+
+  const { data: response, isLoading, isError } = useQuery({
+    queryKey: ['todoHistory', userId],
+    queryFn: () => childrenService.getChildrenAllTodoHistory(userId),
+    enabled: !!userId,
+  });
+
+  const childData = response?.data;
+
+  // --- Logic to transform flat array into Sections ---
+  const sections = useMemo(() => {
+    if (!childData?.todos) return [];
+
+    const groups: { [key: string]: any[] } = {};
+
+    childData.todos.forEach((todo: any) => {
+      const date = new Date(todo.createdAt);
+      let dateLabel = format(date, 'MMM dd, yyyy');
+      
+      if (isToday(date)) dateLabel = 'Today';
+      else if (isYesterday(date)) dateLabel = 'Yesterday';
+
+      if (!groups[dateLabel]) {
+        groups[dateLabel] = [];
+      }
+      groups[dateLabel].push(todo);
+    });
+
+    return Object.keys(groups).map((date) => ({
+      title: date,
+      data: groups[date],
+    }));
+  }, [childData]);
+
+  const handelSeeStats = () => { 
+    navigation.navigate('stats', { userId }); 
+  };
+
+  const renderItem = ({ item }: any) => {
+    const accentColor = item.isDone ? '#00BFA5' : '#FF8A80';
+    const statusIcon = item.isDone ? 'check' : 'close';
+    const timeDisplay = item.doneTime 
+      ? format(new Date(item.doneTime), 'hh:mm a') 
+      : 'Pending';
 
     return (
       <View style={styles.historyCard}>
-        <View style={[styles.statusLine, { backgroundColor: item.completed ? '#CBBAFF' : '#FF8A80' }]} />
+        <View style={[styles.statusLine, { backgroundColor: item.isDone ? '#CBBAFF' : '#FF8A80' }]} />
         <View style={styles.cardContent}>
-          <View style={styles.taskInfo }>
-            <Text style={[styles.taskText, !item.completed && styles.incompleteText]}>
-              {item.text}
+          <View style={styles.taskInfo}>
+            <Text style={[styles.taskText, !item.isDone && styles.incompleteText]}>
+              {item.title}
             </Text>
             <View style={styles.timeRow}>
               <MaterialCommunityIcons 
-                name={item.completed ? "clock-check-outline" : "clock-alert-outline"} 
+                name={item.isDone ? "clock-check-outline" : "clock-alert-outline"} 
                 size={12} 
                 color={accentColor} 
               />
-              <Text style={[styles.timeText, { color: accentColor }]}>{statusLabel}</Text>
+              <Text style={[styles.timeText, { color: accentColor }]}>
+                {item.isDone ? `Completed at ${timeDisplay}` : 'Incomplete'}
+              </Text>
             </View>
           </View>
           <View style={[styles.statusCircle, { backgroundColor: accentColor }]}>
@@ -55,7 +87,7 @@ function PreviousTodoList() {
     );
   };
 
-  const renderSectionHeader = ({ section: { title } }:any) => (
+  const renderSectionHeader = ({ section: { title } }: any) => (
     <View style={styles.headerContainer}>
       <View style={styles.dot} />
       <Text style={styles.sectionHeader}>{title}</Text>
@@ -63,26 +95,25 @@ function PreviousTodoList() {
     </View>
   );
 
+  if (isLoading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#CBBAFF" />;
   return (
-    <AdminScreenLayout>
+<AdminScreenLayout>
       <View style={styles.main}>
-        {/* Parent Header with Stats/BarChart Button */}
         <View style={styles.topInfo}>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>History</Text>
-              <Text style={styles.subtitle}>Alex Johnson performance</Text>
+              <Text style={styles.subtitle}>{childData?.name || 'Child'} performance</Text>
             </View>
             
             <View style={styles.headerActions}>
-              {/* --- NEW BAR CHART BUTTON --- */}
-              <TouchableOpacity style={styles.chartBtn} activeOpacity={0.7} onPress={()=>handelSeeStats()}>
+              <TouchableOpacity style={styles.chartBtn} activeOpacity={0.7} onPress={handelSeeStats}>
                 <MaterialCommunityIcons name="chart-bar" size={22} color="#00BFA5" />
                 <Text style={styles.chartBtnText}>Stats</Text>
               </TouchableOpacity>
 
               <Image 
-                source={{ uri: 'https://i.pravatar.cc/150?u=1' }} 
+                source={{ uri: childData?.image || 'https://via.placeholder.com/150' }} 
                 style={styles.miniAvatar} 
               />
             </View>
@@ -90,8 +121,8 @@ function PreviousTodoList() {
         </View>
 
         <SectionList
-          sections={HISTORY_DATA}
-          keyExtractor={(item) => item.id}
+          sections={sections}
+          keyExtractor={(item) => item._id}
           renderItem={renderItem}
           renderSectionHeader={renderSectionHeader}
           stickySectionHeadersEnabled={false}

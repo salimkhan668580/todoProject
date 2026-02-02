@@ -1,24 +1,37 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminScreenLayout from "../AdminLayout/AdminScreenLayout";
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AdminNevigation';
 import { useAppDispatch } from '@/app/store/hook';
 import { ClearUser } from '@/app/store/AuthSlice';
+import { useQuery } from '@tanstack/react-query';
+import { childrenService } from '@/app/service/childrenService';
+
 
 function AdminProfileScreen() {
   const dispatch = useAppDispatch();
-      const navigation = useNavigation<NavigationProp<RootStackParamList >>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  // --- 1. Fetch Profile Data ---
+  const { data: response, isLoading, isError } = useQuery({
+    queryKey: ['adminProfile'],
+    queryFn: () => childrenService.getuserProfile() 
+  });
+
+  const adminData = response?.data;
+
   const MENU_OPTIONS = [
     { id: '1', icon: 'bell-ring-outline', label: 'Task Reminders', color: '#A2F3FF' },
-
     { id: '2', icon: 'logout', label: 'Logout', color: '#FF8A80' },
   ];
 
-  const handelLogout=()=>{
-   dispatch(ClearUser());
-  }
+  const handelLogout = () => {
+    dispatch(ClearUser());
+    // Navigation to Login is usually handled by your Auth navigator 
+    // when the state is cleared, but you can force it if needed.
+  };
 
   const handleOptionPress = (optionId: string) => {
     switch (optionId) {
@@ -26,39 +39,51 @@ function AdminProfileScreen() {
         navigation.navigate('taskReminder');
         break;
       case '2':
-        navigation.navigate('Login');
+        handelLogout();
         break;
       default:
         break;
     }
   };
 
+  if (isLoading) {
+    return (
+      <AdminScreenLayout>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#CBBAFF" />
+        </View>
+      </AdminScreenLayout>
+    );
+  }
+
   return (
-    <AdminScreenLayout>
+<AdminScreenLayout>
       <ScrollView style={styles.main} showsVerticalScrollIndicator={false}>
         
-        {/* --- 1. PERSONAL HEADER --- */}
+        {/* --- 1. PERSONAL HEADER (DYNAMIC) --- */}
         <View style={styles.profileHeader}>
           <View style={styles.imageWrapper}>
             <Image 
-              source={{ uri: 'https://i.pravatar.cc/150?u=parent' }} 
+              source={{ uri: adminData?.image || 'https://via.placeholder.com/150' }} 
               style={styles.profileImage} 
             />
             <TouchableOpacity style={styles.editIcon}>
               <MaterialCommunityIcons name="pencil" size={16} color="white" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.adminName}>Parent Dashboard</Text>
-          <Text style={styles.adminEmail}>Personal Workspace</Text>
+          <Text style={styles.adminName}>{adminData?.name || 'Admin'}</Text>
+          <Text style={styles.adminEmail}>{adminData?.email}</Text>
           <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>CHIEF ORGANIZER</Text>
+            <Text style={styles.roleText}>{adminData?.role?.toUpperCase() || 'PARENT'}</Text>
           </View>
         </View>
 
         {/* --- 2. FAMILY INSIGHTS --- */}
+        {/* Note: If your getProfile API doesn't return these counts, 
+            you might need a separate dashboard-summary API call */}
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>03</Text>
+            <Text style={styles.statNumber}>02</Text>
             <Text style={styles.statLabel}>Kids</Text>
           </View>
           <View style={styles.statDivider} />
@@ -67,20 +92,19 @@ function AdminProfileScreen() {
             <Text style={styles.statLabel}>Active Tasks</Text>
           </View>
           <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={[styles.statNumber, { color: '#CBBAFF' }]}>12</Text>
-            <Text style={styles.statLabel}>Awards</Text>
-          </View>
+         
         </View>
 
         {/* --- 3. MENU LIST --- */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           {MENU_OPTIONS.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.menuItem} activeOpacity={0.7} 
-
-            onPress={()=>{
-              item.id === '2' ? handelLogout() : handleOptionPress(item.id)}} >
+            <TouchableOpacity 
+              key={item.id} 
+              style={styles.menuItem} 
+              activeOpacity={0.7} 
+              onPress={() => handleOptionPress(item.id)}
+            >
               <View style={[styles.iconBg, { backgroundColor: item.color + '15' }]}>
                 <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
               </View>

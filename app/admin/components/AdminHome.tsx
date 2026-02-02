@@ -11,11 +11,7 @@ import { ChildItem } from '@/app/types/children';
 
 
 
-const CHILDREN_DATA = [
-  { id: '1', name: 'Alex Johnson', totalTasks: 12, completedTasks: 10, image: 'https://i.pravatar.cc/150?u=1' },
-  { id: '2', name: 'Sophie Chen', totalTasks: 8, completedTasks: 3, image: 'https://i.pravatar.cc/150?u=2' },
-  { id: '3', name: 'Marcus Brown', totalTasks: 15, completedTasks: 1, image: 'https://i.pravatar.cc/150?u=3' },
-];
+
 
 function AdminHome() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -29,8 +25,9 @@ function AdminHome() {
 
   const children: ChildItem[] = data?.data || [];
 
-  const handleChildPress = () => {
-    navigation.navigate('TaskDetails');
+  const handleChildPress = (id:string) => {
+    if(!id) return
+    navigation.navigate('TaskDetails',{ userId: id });
   };
 
   const onRefresh = async () => {
@@ -56,7 +53,7 @@ function AdminHome() {
             key={child._id}
             style={styles.childCard}
             activeOpacity={0.9}
-            onPress={handleChildPress}
+            onPress={()=>handleChildPress(child._id)}
           >
             {/* Image Section */}
             <Image source={{ uri: child.image }} style={styles.avatar} />

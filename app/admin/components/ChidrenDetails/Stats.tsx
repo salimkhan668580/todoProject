@@ -1,19 +1,49 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminScreenLayout from "../../AdminLayout/AdminScreenLayout";
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../navigation/AdminNevigation';
+import { useQuery } from '@tanstack/react-query';
+import { childrenService } from '@/app/service/childrenService';
 
 function Stats() {
-  const [filter, setFilter] = useState('Week'); // Week, Month, Year
+  const route = useRoute<RouteProp<RootStackParamList, 'stats'>>();
+  const { userId } = route.params;
+  
+  // Set initial state to 'Month' to match your response example
+  const [filter, setFilter] = useState('Month'); 
 
-  // Mock data based on filter
-  const statsData = {
-    Week: { assigned: 45, completed: 38, percent: 84, days: ['M', 'T', 'W', 'T', 'F', 'S', 'S'] },
-    Month: { assigned: 180, completed: 145, percent: 80, days: ['W1', 'W2', 'W3', 'W4'] },
-    Year: { assigned: 1200, completed: 950, percent: 79, days: ['Q1', 'Q2', 'Q3', 'Q4'] },
-  };
+  // Fetch stats whenever userId or filter changes
+  const { data: response, isLoading, isError } = useQuery({
+    queryKey: ['stats', userId, filter],
+    queryFn: () => childrenService.getStats(userId, filter.toLowerCase()),
+    enabled: !!userId,
+  });
 
-  const activeStats = statsData[filter];
+  // Accessing the data dynamically based on the filter key (e.g., response.data.Month)
+  const activeStats = response?.data?.[filter];
+
+  if (isLoading) {
+    return (
+      <AdminScreenLayout>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#CBBAFF" />
+        </View>
+      </AdminScreenLayout>
+    );
+  }
+
+  if (isError || !activeStats) {
+    return (
+      <AdminScreenLayout>
+        <View style={styles.center}>
+          <MaterialCommunityIcons name="database-off" size={48} color="#EEE" />
+          <Text style={styles.subtitle}>No data available for this period.</Text>
+        </View>
+      </AdminScreenLayout>
+    );
+  }
 
   return (
     <AdminScreenLayout>
@@ -56,6 +86,7 @@ function Stats() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <Text style={styles.chartTitle}>{filter}ly Progress</Text>
+            {/* Fixed: Changed <div> to <View> */}
             <View style={styles.legend}>
               <View style={[styles.dot, { backgroundColor: '#00BFA5' }]} />
               <Text style={styles.legendText}>Task Success</Text>
@@ -63,15 +94,19 @@ function Stats() {
           </View>
 
           <View style={styles.barsRow}>
-            {activeStats.days.map((day, index) => (
-              <View key={index} style={styles.barColumn}>
-                <View style={styles.barBackground}>
-                  {/* Random height logic for demo purposes */}
-                  <View style={[styles.barFill, { height: `${Math.floor(Math.random() * 60) + 30}%` }]} />
+            {activeStats.days.map((day: string, index: number) => {
+              // Logic: If there's 100% progress, bar is full (100%). 
+              // Otherwise, we show a minimum of 10% for visual consistency.
+              const barHeight = activeStats.percent > 0 ? activeStats.percent : 10;
+              return (
+                <View key={index} style={styles.barColumn}>
+                  <View style={styles.barBackground}>
+                    <View style={[styles.barFill, { height: `${barHeight}%` }]} />
+                  </View>
+                  <Text style={styles.dayLabel}>{day}</Text>
                 </View>
-                <Text style={styles.dayLabel}>{day}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
@@ -93,6 +128,7 @@ function Stats() {
 }
 
 const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   main: { flex: 1, backgroundColor: '#F9FFFF', paddingHorizontal: 20 },
   header: { marginTop: 20, marginBottom: 20 },
   title: { fontSize: 28, fontWeight: '800', color: '#2D3142' },

@@ -8,6 +8,7 @@ import { NotificationItem } from '@/app/types/notification';
 
 function NotificationScreen() {
   const queryClient = useQueryClient();
+
   const { data, isFetching } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationService.getNotifications(),
@@ -40,12 +41,16 @@ function NotificationScreen() {
     const unread = !item.isRead;
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.notificationCard, unread && styles.unreadCard]}
         activeOpacity={0.7}
       >
         <View style={[styles.iconContainer, { backgroundColor: iconData.color + '20' }]}>
-          <MaterialCommunityIcons name={iconData.name as any} size={24} color={iconData.color} />
+          <MaterialCommunityIcons
+            name={iconData.name as any}
+            size={24}
+            color={iconData.color}
+          />
         </View>
 
         <View style={styles.textContainer}>
@@ -53,7 +58,9 @@ function NotificationScreen() {
             <Text style={styles.notifTitle}>{item.title}</Text>
             <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
           </View>
-          <Text style={styles.notifMessage} numberOfLines={2}>{item.description}</Text>
+          <Text style={styles.notifMessage} numberOfLines={2}>
+            {item.description}
+          </Text>
         </View>
 
         {unread && <View style={styles.unreadDot} />}
@@ -61,13 +68,21 @@ function NotificationScreen() {
     );
   };
 
+  const EmptyNotification = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>No notifications found</Text>
+    </View>
+  );
+
   return (
     <ScreenLayout>
       <View style={styles.main}>
         <View style={styles.header}>
           <Text style={styles.title}>Notifications</Text>
           <TouchableOpacity
-            onPress={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
+            onPress={() =>
+              queryClient.invalidateQueries({ queryKey: ['notifications'] })
+            }
           >
             <Text style={styles.markRead}>Refresh</Text>
           </TouchableOpacity>
@@ -77,12 +92,16 @@ function NotificationScreen() {
           data={notifications}
           keyExtractor={(item) => item._id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listPadding}
+          contentContainerStyle={[
+            styles.listPadding,
+            notifications.length === 0 && { flex: 1 },
+          ]}
           showsVerticalScrollIndicator={false}
           refreshing={isFetching}
           onRefresh={() =>
             queryClient.invalidateQueries({ queryKey: ['notifications'] })
           }
+          ListEmptyComponent={!isFetching ? <EmptyNotification /> : null}
         />
       </View>
     </ScreenLayout>
@@ -91,16 +110,18 @@ function NotificationScreen() {
 
 const styles = StyleSheet.create({
   main: { flex: 1, backgroundColor: '#F9FFFF' },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 24, 
-    paddingVertical: 20 
+
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
+
   title: { fontSize: 28, fontWeight: '800', color: '#2D3142' },
   markRead: { color: '#00BFA5', fontWeight: '600', fontSize: 14 },
-  
+
   listPadding: { paddingHorizontal: 20, paddingBottom: 40 },
 
   notificationCard: {
@@ -115,10 +136,12 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
+
   unreadCard: {
     borderLeftWidth: 4,
     borderLeftColor: '#CBBAFF',
   },
+
   iconContainer: {
     width: 50,
     height: 50,
@@ -127,24 +150,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 15,
   },
+
   textContainer: { flex: 1 },
-  headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4
+    marginBottom: 4,
   },
+
   notifTitle: { fontSize: 16, fontWeight: '700', color: '#2D3142' },
   timeText: { fontSize: 12, color: '#BBB' },
   notifMessage: { fontSize: 14, color: '#888', lineHeight: 20 },
-  
+
   unreadDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: '#FF5252',
     marginLeft: 10,
-  }
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    fontWeight: '600',
+  },
 });
 
 export default NotificationScreen;
