@@ -12,6 +12,7 @@ import ChildrenDetails from "../components/ChidrenDetails/ChildrenDetails";
 import PreviousTodoList from "../components/ChidrenDetails/PreviousTodoList";
 import Stats from "../components/ChidrenDetails/Stats";
 import TaskReminder from "../components/taskReminder/TaskReminder";
+import NotificationHistory from "../components/taskReminder/NotificationHistory";
 
 export type RootStackParamList = {
 
@@ -22,6 +23,7 @@ export type RootStackParamList = {
   TaskDetails: undefined | { userId: string };
   PreviousTodoList: undefined | {userId:string};
   Notification: undefined;
+  NotificationHistory: undefined;
   
   ChildrenDetails: { userId: string }; 
 
@@ -47,6 +49,7 @@ export default function AdminNavigation() {
           <Stack.Screen name="TaskDetails" component={ChildrenDetails} />
           <Stack.Screen name="PreviousTodoList" component={PreviousTodoList} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
+          <Stack.Screen name="NotificationHistory" component={NotificationHistory} />
           <Stack.Screen
             name="AdminTabs"
             component={AdminTabNavigator}
