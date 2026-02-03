@@ -32,8 +32,8 @@ export default function TabNavigator() {
           borderTopColor: "#E5E7EB",
 
           paddingTop: 5,
-          paddingBottom: insets.bottom + 5, // 👈 KEY FIX
-          height: 60 + insets.bottom,       // 👈 KEY FIX
+          paddingBottom: insets.bottom + 5, 
+          height: 60 + insets.bottom,     
         },
       }}
     >

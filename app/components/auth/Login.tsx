@@ -2,8 +2,8 @@ import { addUser } from "@/app/store/AuthSlice";
 import { useAppDispatch } from "@/app/store/hook";
 import Entypo from "@expo/vector-icons/Entypo";
 
-import Toast from 'react-native-toast-message';
-  import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Toast from "react-native-toast-message";
 
 import React, { useState } from "react";
 import {
@@ -19,9 +19,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { authService } from "@/app/service/authService";
 import { authPayload } from "@/app/types/auth";
 import { useMutation } from "@tanstack/react-query";
-import { authService } from "@/app/service/authService";
 import { AxiosError } from "axios";
 
 const PRIMARY = "#0a7ea4";
@@ -31,15 +31,13 @@ const GRAY_600 = "#4B5563";
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
-  
-  const [email, setEmail] = useState("mkkhan@gmail.com");
-  const [password, setPassword] = useState("Mkkhan@1234");
-  const [errors, setErrors] = useState<authPayload>(
-    {
-      email: "",
-      password: "",
-    },
-  );
+
+  const [email, setEmail] = useState("Lubna@gmail.com");
+  const [password, setPassword] = useState("1234");
+  const [errors, setErrors] = useState<authPayload>({
+    email: "",
+    password: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (name: "email" | "password", value: string) => {
@@ -57,54 +55,43 @@ export default function LoginPage() {
     else if (password.length < 4)
       next.password = "Password must be at least 4 characters";
     setErrors(next as authPayload);
-    
+
     return Object.keys(next).length === 0;
   };
 
-  const loginMutation=useMutation({
-    mutationFn:(payload:authPayload)=>authService.login(payload.email,payload.password),
-    onSuccess:async(data)=>{
-      
-        dispatch(addUser(data));
+  const loginMutation = useMutation({
+    mutationFn: (payload: authPayload) =>
+      authService.login(payload.email, payload.password),
+    onSuccess: async (data) => {
+      dispatch(addUser(data));
       const token = (data as any)?.token || (data as any)?.data?.token;
       if (token) {
         await AsyncStorage.setItem("token", token);
       }
-       Toast.show({
-      type: 'success',
-      text1: 'Login Successfully',
-     
-    });
+      Toast.show({
+        type: "success",
+        text1: "Login Successfully",
+      });
     },
-    onError:(error:unknown)=>{
-      if(error instanceof AxiosError){
-   
+    onError: (error: unknown) => {
+      if (error instanceof AxiosError) {
+        return Toast.show({
+          type: "error",
+          text1: error?.response?.data.message,
+        });
+      }
 
-       return Toast.show({
-      type: 'error',
-      text1: error?.response?.data.message,
-     
-    });
-  }
-
-  Toast.show({
-      type: 'error',
-      text1: "Something went wrong",
-     
-    });
-
-
-
-
-
-    }
-  })
+      Toast.show({
+        type: "error",
+        text1: "Something went wrong",
+      });
+    },
+  });
 
   const handleLogin = () => {
     if (!validate()) return;
-  
-    loginMutation.mutate({email,password})
 
+    loginMutation.mutate({ email, password });
   };
 
   return (
