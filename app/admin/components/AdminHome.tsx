@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminScreenLayout from "../AdminLayout/AdminScreenLayout";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from '../navigation/AdminNevigation';
@@ -10,6 +10,8 @@ import { ChildItem } from '@/app/types/children';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from '@/app/Helper';
+import { useAppSelector } from '@/app/store/hook';
+import { fCMService } from '@/app/service/FcmService';
 
 
 
@@ -17,23 +19,25 @@ import { getToken } from '@/app/Helper';
 
 
  function AdminHome() {
-  const { expoPushToken } = usePushNotifications();
+   const { expoPushToken } = usePushNotifications();
+   const userData=useAppSelector(state=>state.user.value)
 
+     const saveFcmMutation = useMutation({
+       mutationFn: ({ userId, fcmToken }: { userId: string; fcmToken: string }) =>
+         fCMService.saveFcm(userId, fcmToken),
+     });
  
 
   useEffect(() => {
-    console.log("this is fcm token=>",expoPushToken)
-    if (expoPushToken) {
-      const userData=getToken()
-      console.log("fcm token=>",expoPushToken)
-      console.log("user token=>",userData)
+  
+      if (expoPushToken && userData) {
 
-      // API call
-      // fetch('https://your-backend.com/save-fcm-token', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token: expoPushToken }),
-      // });
+        console.log("userData in user=>",userData)
+        console.log("this is fcm token in user=>",expoPushToken)
+        saveFcmMutation.mutate({
+          userId: userData?.data?._id,
+          fcmToken: expoPushToken,
+        });
     }
   }, [expoPushToken]);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
