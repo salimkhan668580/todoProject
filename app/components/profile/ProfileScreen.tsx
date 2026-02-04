@@ -31,6 +31,7 @@ function ProfileScreen() {
   const handleLogout = async () => {
     dispatch(ClearUser());
     await AsyncStorage.removeItem("token");
+    console.log("async store=>", AsyncStorage.getItem("token"));
   };
 
   const { data: profileResponse } = useQuery({

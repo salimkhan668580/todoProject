@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,13 +7,35 @@ import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from '../navigation/AdminNevigation';
 import { childrenService } from '@/app/service/childrenService';
 import { ChildItem } from '@/app/types/children';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '@/app/Helper';
 
 
 
 
 
 
-function AdminHome() {
+ function AdminHome() {
+  const { expoPushToken } = usePushNotifications();
+
+ 
+
+  useEffect(() => {
+    console.log("this is fcm token=>",expoPushToken)
+    if (expoPushToken) {
+      const userData=getToken()
+      console.log("fcm token=>",expoPushToken)
+      console.log("user token=>",userData)
+
+      // API call
+      // fetch('https://your-backend.com/save-fcm-token', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ token: expoPushToken }),
+      // });
+    }
+  }, [expoPushToken]);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);

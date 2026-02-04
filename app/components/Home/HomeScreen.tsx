@@ -1,17 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenLayout from '@/app/Layout/ScreenLayout';
 import { childrenService } from '@/app/service/childrenService';
 import ProgreeCard from "./ProgressCard";
 import DailyTask from "./DailyTask";
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { getToken } from '@/app/Helper';
+import { useAppSelector } from '@/app/store/hook';
+import { fCMService } from '@/app/service/FcmService';
 
 // Assuming you have access to the logged-in child's ID via your Auth context or similar
 // For this example, I'll use a placeholder 'currentUserId'
 const currentUserId = "697cecf87665a7ec9d9ac682"; 
 
 function HomeScreen() {
+
+  const { expoPushToken } = usePushNotifications();
+  const userData=useAppSelector(state=>state.user.value)
+
+  const saveFcmMutation = useMutation({
+    mutationFn: ({ userId, fcmToken }: { userId: string; fcmToken: string }) =>
+      fCMService.saveFcm(userId, fcmToken),
+  });
+
+  useEffect(() => {
+  
+      if (expoPushToken && userData) {
+
+        console.log("userData in user=>",userData)
+        console.log("this is fcm token in user=>",expoPushToken)
+        saveFcmMutation.mutate({
+          userId: userData?.data?._id,
+          fcmToken: expoPushToken,
+        });
+    }
+  }, [expoPushToken]);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('Week'); // Default filter
   const queryClient = useQueryClient();

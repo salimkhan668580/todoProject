@@ -5,7 +5,7 @@ import Entypo from "@expo/vector-icons/Entypo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -23,6 +23,7 @@ import { authService } from "@/app/service/authService";
 import { authPayload } from "@/app/types/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const PRIMARY = "#0a7ea4";
 const GRAY_300 = "#D1D5DB";
@@ -31,7 +32,6 @@ const GRAY_600 = "#4B5563";
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
-
   const [email, setEmail] = useState("Lubna@gmail.com");
   const [password, setPassword] = useState("1234");
   const [errors, setErrors] = useState<authPayload>({
