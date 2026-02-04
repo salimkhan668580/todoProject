@@ -27,7 +27,6 @@ import { fCMService } from '@/app/service/FcmService';
          fCMService.saveFcm(userId, fcmToken),
      });
  
-
   useEffect(() => {
   
       if (expoPushToken && userData) {

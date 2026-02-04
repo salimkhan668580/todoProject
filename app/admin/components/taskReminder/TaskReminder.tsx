@@ -6,6 +6,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { childrenService } from '@/app/service/childrenService';
 import { notificationService } from '@/app/service/notificationService';
 import { useNavigation } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 function TaskReminder() {
   const navigation = useNavigation<any>();
@@ -23,7 +24,10 @@ function TaskReminder() {
   const mutation = useMutation({
     mutationFn: (payload: any) => notificationService.sendNotifications(payload),
     onSuccess: () => {
-      Alert.alert("Success", "Reminders sent successfully! 🚀");
+      Toast.show({
+        type: 'success',
+        text1: 'Notification sent successfully',
+      })
       setTitle('');
       setDescription('');
       setSelectedChildren([]);
