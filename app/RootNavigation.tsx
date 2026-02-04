@@ -5,7 +5,10 @@ import { useAppSelector, } from "./store/hook";
 import AppNavigation from "./navigation/AppNevigation";
 
 
+
+
 export default function RootNavigator() {
+  
 const user = useAppSelector(state => state.user.value);
 
   if (!user) return <AuthNavigator />;
