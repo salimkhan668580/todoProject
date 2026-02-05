@@ -3,16 +3,28 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "./AdminHeader";
+import * as Notifications from "expo-notifications";
 
 type ScreenLayoutProps = {
   children: React.ReactNode;
 
 };
 
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+      shouldShowList: true,
+       shouldShowBanner: true, 
+    shouldShowAlert: true,     
+    shouldPlaySound: true,   
+    shouldSetBadge: false,
+  }),
+});
 export default function AdminScreenLayout({
   children,
 
 }: ScreenLayoutProps) {
+  
   return (
     <LinearGradient
       colors={["#F7F8FC", "#EEF1F8", "#E6ECF5"]}

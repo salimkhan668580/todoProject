@@ -4,12 +4,10 @@ import AuthNavigator from "./AuthNavigation";
 import { useAppSelector, } from "./store/hook";
 import AppNavigation from "./navigation/AppNevigation";
 
-
-
-
 export default function RootNavigator() {
   
 const user = useAppSelector(state => state.user.value);
+console.log(user ,"user store in params")
 
   if (!user) return <AuthNavigator />;
 
@@ -18,7 +16,4 @@ const user = useAppSelector(state => state.user.value);
   }
   
     return <AppNavigation />;
-
-//   return <AdminNavigation/>;
-
 }

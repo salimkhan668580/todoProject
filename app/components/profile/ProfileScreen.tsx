@@ -117,13 +117,13 @@ function ProfileScreen() {
             onPress={() => navigation.navigate("Notification")}
             sublabel="Mute or change alerts"
           />
-          <SettingItem
+          {/* <SettingItem
             icon="palette-swatch-outline"
             label="App Theme"
             color="#8B5CF6"
             onPress={() => navigation.navigate("Notification")}
             sublabel="Teal & Purple Sky"
-          />
+          /> */}
         </View>
 
         {/* --- 4. THEMED LOGOUT --- */}

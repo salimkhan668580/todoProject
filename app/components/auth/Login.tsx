@@ -1,5 +1,5 @@
 import { addUser } from "@/app/store/AuthSlice";
-import { useAppDispatch } from "@/app/store/hook";
+import { useAppDispatch, useAppSelector } from "@/app/store/hook";
 import Entypo from "@expo/vector-icons/Entypo";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -23,7 +23,6 @@ import { authService } from "@/app/service/authService";
 import { authPayload } from "@/app/types/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const PRIMARY = "#0a7ea4";
 const GRAY_300 = "#D1D5DB";
@@ -32,6 +31,12 @@ const GRAY_600 = "#4B5563";
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
+  const user=useAppSelector(state=>state.user.value)
+  useEffect(() => {
+    
+    
+console.log('USER STATE AFTER REHYDRATE 👉', user)
+  },[])
   const [email, setEmail] = useState("Lubna@gmail.com");
   const [password, setPassword] = useState("1234");
   const [errors, setErrors] = useState<authPayload>({
@@ -65,9 +70,14 @@ export default function LoginPage() {
     onSuccess: async (data) => {
       dispatch(addUser(data));
       const token = (data as any)?.token || (data as any)?.data?.token;
-      if (token) {
-        await AsyncStorage.setItem("token", token);
+
+      if (!token) {
+       return  Toast.show({
+          type: "error",
+          text1: "Something went wrong",
+        })
       }
+      await AsyncStorage.setItem("token", token);
       Toast.show({
         type: "success",
         text1: "Login Successfully",
@@ -96,10 +106,10 @@ export default function LoginPage() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+           <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
       >
         <ScrollView
           showsVerticalScrollIndicator={false}

@@ -2,9 +2,11 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
-// const BASE_URL = "http://43.204.250.254:4001"; //server url
+const BASE_URL = "http://43.204.250.254:4002"; //server url
 
-const BASE_URL = "http://172.30.1.119:3000"; 
+
+// const BASE_URL = "http://172.30.1.119:3000"; //aruba
+
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -27,7 +29,7 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = token;
     }
-    console.log("token", token);
+    console.log("token in intecepter", token);
     return config;
   },
   (error) => Promise.reject(error)
@@ -47,10 +49,7 @@ axiosInstance.interceptors.response.use(
       console.log("❌", response.status, response.data);
       if (response.status === 401) {
         await AsyncStorage.clear();
-
-        // 🔥 RN me window.location nahi hota
-        // Navigation yahan handle karna padega
-        // example: navigation.reset(...)
+        
       }
     } else {
       // Network error or no response

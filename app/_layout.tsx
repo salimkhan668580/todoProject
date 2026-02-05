@@ -16,8 +16,9 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { store } from "./store/store";
+import { store ,persistor} from "./store/store";
 import { Provider } from "react-redux";
+import { PersistGate } from 'redux-persist/integration/react'
 
 
 Notifications.setNotificationHandler({
@@ -38,7 +39,16 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <QueryClientProvider client={queryClient}>
         <Provider store={store}>
+                <PersistGate
+                 loading={null}
+                  persistor={persistor}
+                   onBeforeLift={() => {
+    console.log('✅ REDUX REHYDRATED')
+  }}
+                  >
+
           <RootNavigator />
+          </PersistGate>
         </Provider>
       </QueryClientProvider>
 

@@ -137,10 +137,11 @@ function TodoScreen() {
   
   return (
     <ScreenLayout>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={styles.main}
-      >
+       <KeyboardAvoidingView
+    style={{ flex: 1 }}
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 100}
+  >
         {/* --- HEADER SECTION --- */}
         <View style={styles.headerSection}>
           <View style={styles.topRow}>
