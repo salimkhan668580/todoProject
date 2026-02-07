@@ -21,9 +21,7 @@ export default function Header() {
       {/* Left */}
       <View style={styles.left}>
         <Image
-          source={{
-            uri: "https://i.pravatar.cc/100?img=12",
-          }}
+          source={require("../../../assets/images/parent.png")}
           style={styles.avatar}
         />
 
